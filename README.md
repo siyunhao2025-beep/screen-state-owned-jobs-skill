@@ -4,6 +4,14 @@
 
 这个 Skill 的重点不是把某一位求职者的信息写死在程序里，而是**每次都以当前用户上传的简历为准**。换一份简历，候选人画像、岗位筛选条件、匹配证据和投递建议都会随之更新。
 
+## 一键安装
+
+请下载仓库中单独提供的 **[`screen-state-owned-jobs.zip`](https://github.com/siyunhao2025-beep/screen-state-owned-jobs-skill/raw/refs/heads/main/screen-state-owned-jobs.zip)**，然后在 ChatGPT 的“导入技能”窗口中直接上传这个 ZIP。
+
+不要使用 GitHub 右上角 `Code → Download ZIP` 下载整个仓库。整个仓库的 `SKILL.md` 位于第二层目录，直接导入会提示“未找到 SKILL.md 主文件”；专用安装包已经把 `SKILL.md` 放在压缩包根目录。
+
+安装包只包含 Skill 运行所需内容：`SKILL.md`、`agents/`、`assets/`、`references/` 和 `scripts/`，不包含 README、许可证或任何用户简历。
+
 ## 一句话理解
 
 你给它一份简历和一张飞书招聘表，它会帮你回答四个问题：
