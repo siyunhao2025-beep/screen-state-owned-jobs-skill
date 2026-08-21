@@ -1,0 +1,17 @@
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.DS_Store
+
+# Never commit real resumes or generated candidate data.
+outputs/
+*.xlsx
+resume_parse.json
+resume_profile.json
+resume_text.txt
+
+# Common resume filenames and formats at repository root.
+/resume*
+/*.pdf
+/*.docx
