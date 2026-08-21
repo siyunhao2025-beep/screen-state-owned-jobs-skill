@@ -1,0 +1,14 @@
+interface:
+  display_name: 央国企岗位筛选
+  short_description: 动态解析上传简历并筛选央国企无笔试岗位，生成完整表格
+  default_prompt: Use $screen-state-owned-jobs to parse my uploaded resume and screen
+    the Feishu job table.
+  icon_small: assets/icon.svg
+  icon_large: assets/icon.svg
+policy:
+  products:
+  - chatgpt
+  - codex
+  - api
+  - atlas
+  allow_implicit_invocation: true
