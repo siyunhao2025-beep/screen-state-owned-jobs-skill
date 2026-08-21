@@ -6,11 +6,18 @@
 
 ## 一键安装
 
-请下载仓库中单独提供的 **[`screen-state-owned-jobs.zip`](https://github.com/siyunhao2025-beep/screen-state-owned-jobs-skill/raw/refs/heads/main/screen-state-owned-jobs.zip)**，然后在 ChatGPT 的“导入技能”窗口中直接上传这个 ZIP。
+### 在当前 GitHub 仓库页面中下载
 
-不要使用 GitHub 右上角 `Code → Download ZIP` 下载整个仓库。整个仓库的 `SKILL.md` 位于第二层目录，直接导入会提示“未找到 SKILL.md 主文件”；专用安装包已经把 `SKILL.md` 放在压缩包根目录。
+请不要点击绿色的 `Code → Download ZIP`。该按钮下载的是整个源代码仓库，不是可直接导入的 Skill 安装包。
 
-安装包只包含 Skill 运行所需内容：`SKILL.md`、`agents/`、`assets/`、`references/` 和 `scripts/`，不包含 README、许可证或任何用户简历。
+正确操作如下：
+
+1. 在仓库文件列表中点击 **`screen-state-owned-jobs-import-v2.zip`**；
+2. 进入文件页面后，点击右上方的 **Download raw file（下载原始文件）** 图标；
+3. 也可以直接点击：**[下载可导入的 Skill 安装包](https://github.com/siyunhao2025-beep/screen-state-owned-jobs-skill/raw/refs/heads/main/screen-state-owned-jobs-import-v2.zip)**；
+4. 下载后不要解压、不要改名，直接在 ChatGPT 的“导入技能”窗口上传该 ZIP。
+
+安装包采用 ChatGPT 导入器可识别的结构：压缩包内只有一个顶层文件夹 `screen-state-owned-jobs/`，其第一层直接包含 `SKILL.md`。安装包还包含运行所需的 `agents/`、`assets/`、`references/` 和 `scripts/`，不包含 README、许可证、用户简历或运行结果。
 
 ## 一句话理解
 
