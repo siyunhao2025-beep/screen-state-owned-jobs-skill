@@ -1,0 +1,6 @@
+interface:
+  display_name: "云招聘表岗位筛选"
+  short_description: "动态解析用户上传简历，筛选云招聘表中的各类单位岗位并生成六表结果"
+  default_prompt: "Use $screen-state-owned-jobs to parse my uploaded resume and screen all matching jobs in the configured Feishu cloud recruitment table."
+  icon_small: "assets/icon.svg"
+  icon_large: "assets/icon.svg"
