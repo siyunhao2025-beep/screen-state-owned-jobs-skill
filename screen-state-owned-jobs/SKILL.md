@@ -1,6 +1,6 @@
 ---
 name: screen-state-owned-jobs
-description: Parse a user-uploaded resume into a source-grounded candidate profile, screen jobs of any employer type from the configured Feishu cloud recruitment table, preserve the fixed six-sheet Excel layout, and compare daily changes. Use when the user asks to screen or monitor cloud-table jobs from state-owned enterprises, public institutions, private companies, foreign-funded companies, listed companies, or other employers; prioritize no-written-exam roles; or regenerate the established job workbook. Supports PDF, DOCX, TXT, and Markdown resumes; never use a hardcoded candidate profile or assume a state-owned-only scope.
+description: Parse a user-uploaded resume into a source-grounded candidate profile, screen complementary job sources including the two configured Feishu tables, verify underspecified linked notices, preserve the fixed six-sheet Excel layout, and compare daily changes. Use for resume-based screening across enterprises, public institutions, education, health care, universities, talent-introduction programs, or other employer types; never use a hardcoded candidate profile.
 ---
 
 # Screen Cloud Recruitment Jobs
@@ -14,7 +14,11 @@ Read [references/profile-schema.md](references/profile-schema.md) before parsing
 Preserve these public inputs for backward compatibility:
 
 - `RESUME_FILE`: current user-uploaded resume path or attachment reference.
-- `FEISHU_URL`: recruitment table URL.
+- `FEISHU_URL`: one recruitment table URL; retained for backward compatibility.
+- `FEISHU_URLS`: one or more recruitment table URLs; when omitted, use both configured defaults.
+- `SOURCE_MODE`: `两表互补` (default), `综合招聘表`, `分类编制表`, or `自定义`.
+- `CATEGORY_SCOPE`: classified-table categories/views; default `自动选择`.
+- `LINK_VERIFICATION_MODE`: `必要时逐链接核验` (default) or `仅表内信息`.
 - `RUN_DATE`: `YYYY-MM-DD`.
 - `PREVIOUS_RESULT`: previous structured result or workbook; optional on the first run.
 - `DAILY_MODE`: boolean.
@@ -23,7 +27,9 @@ Preserve these public inputs for backward compatibility:
 - `ALLOW_PROFILE_REUSE`: boolean, default `false`.
 - `PROFILE_OVERRIDES`: user-supplied corrections such as target regions or a verified major-equivalence statement; optional.
 
-Keep the original defaults for `FEISHU_URL` and workbook behavior from `references/workbook-spec.md`. Derive every candidate-specific value at runtime.
+Keep `FEISHU_URL` and workbook behavior backward compatible. Resolve defaults, aliases, and category routing from `references/workbook-spec.md`. Derive every candidate-specific value at runtime.
+
+If the user does not choose a source mode, briefly explain the choices and use `两表互补`: the comprehensive table contributes broad employer coverage and its explicit written-exam field; the classified table contributes public-institution, talent-introduction, education, medical, university, and classified central/state-owned-enterprise coverage. Ask only when limiting scope or time would materially change the result.
 
 Interpret `JOB_NATURE_SCOPE=全部`, an empty value, or an omitted value as all employer types in the cloud table. Apply a narrower employer-nature filter only when the current user explicitly requests it. Examples include `央国企`, `事业单位`, `民企`, `外企`, and `上市公司`; preserve the exact values found in the cloud table rather than forcing these examples onto its schema.
 
@@ -77,40 +83,50 @@ If several resume-like uploads are present and the user did not identify one, as
 - Do not reuse a stale profile after the current upload fails.
 - Do not continue job ranking when profile validation fails.
 
-## Cloud-table scope policy
+## Multi-source and category policy
 
-- Treat the configured Feishu cloud recruitment table as the primary job source.
+- Treat the configured Feishu tables as complementary sources, not substitutes.
+- In `两表互补`, read both tables, retain source labels and URLs, and merge duplicates only after normalization.
+- The classified table exposes `事业单位汇总`, `教育系统(小 初 高 职中)`, `医疗单位、医院招聘`, `高校(高校院所、高职大专)`, and `央国企招聘信息`. Visible subviews include talent-introduction views; the university category also includes `全国院校`, `本科院校`, `高职大专`, `人才引进`, and `行政/助理/工作人员等`.
+- With `CATEGORY_SCOPE=自动选择`, map the resume and preferences to likely categories and inspect adjacent categories when roles can cross boundaries. Honor an explicitly limited category scope and record skipped categories.
 - Include every employer type by default; do not infer a state-owned-only filter from the legacy technical skill name.
 - Apply `JOB_NATURE_SCOPE` or a current-request employer preference after reading the table's actual nature values.
 - Do not penalize or reject a private, foreign-funded, listed, or other company solely because it is not state-owned.
 - When the user requests only one or more employer types, keep excluded records out of ranked sheets and state the active scope in the workbook.
-- Preserve the cloud table's raw employer-nature value in each job record. Use official sources only to verify or clarify it.
+- Preserve each table's raw employer-nature/category/view values. Use official sources only to verify or clarify them.
+
+## Linked-notice verification
+
+Do not reject or rank a record solely from an abbreviated title when it contains a notice, application, attachment, or official-site link. Open the link when the table does not clearly state any qualification that can change eligibility or priority: position identity, duties, employer/establishment nature, location, deadline, application status, degree, major, graduation cohort, age, political status, certificate, experience, written exam, or application method. Compare the linked requirements with resume evidence and current user overrides.
+
+Use this evidence order for eligibility: official recruitment notice and attachments > official application portal > employer or government recruitment page > table summary. Preserve disagreements instead of silently overwriting them. The comprehensive table's explicit `/ = 无笔试` rule remains source-specific; do not apply it to a blank or absent field in the classified table. If a link is inaccessible, ambiguous, expired, or only an unofficial repost, mark affected fields `待确认`, retain the URL, and state what could not be verified. Never infer eligibility from a link title alone.
 
 ## Job screening workflow
 
 Execute the existing workflow in order and preserve its interfaces:
 
 1. Build the candidate profile from the current uploaded resume.
-2. Open the configured Feishu cloud recruitment table and record its latest modification time.
-3. Read all employer types, then apply `JOB_NATURE_SCOPE` only when the user requested a narrower scope; preserve the rule `/ = 无笔试` and `有笔试 = 有笔试`.
+2. Resolve `SOURCE_MODE`, open the selected source(s), record each visible modification time, and enumerate selected categories/views.
+3. Read selected employer types and categories, then apply `JOB_NATURE_SCOPE` only when requested. Preserve the comprehensive-table rule `/ = 无笔试` and `有笔试 = 有笔试`; use `待确认` when another source does not state the exam mode.
 4. Derive employer nature, region, cohort, education, major, and role filters from `resume_profile.json` plus explicit current-request preferences.
-5. Read each matching record into the 26-field job schema in `references/workbook-spec.md`.
-6. Match each job against the profile and cite resume evidence; never cite data absent from the profile.
+5. Read each matching record into the stable job schema and provenance extension in `references/workbook-spec.md`.
+6. Apply linked-notice verification to underspecified and current/high-ranked records. Match against the profile, cite resume evidence, and record checked URL, evidence tier, verification time, unresolved fields, and source conflicts.
 7. Classify and rank jobs with the unchanged status and action-score logic.
 8. Generate the unchanged six-sheet workbook.
 9. Validate formulas, tables, formatting, links, and error cells.
-10. In daily mode, compare by `company + role + location` and report additions, deadline changes, status changes, and link changes.
+10. Deduplicate and compare by normalized `company + role + location + cohort/batch`. Do not merge distinct locations, cohorts, batches, role codes, or materially different roles. For duplicates, retain every source and flag conflicts.
 
 Official sources may verify whether a job remains open, its cohort, education, location, major eligibility, and enterprise type. They must not overwrite the Feishu written-exam field.
 
 ## Compatibility guarantees
 
 - Keep all six worksheet names, order, headers, formulas, colors, widths, heights, freeze panes, and table names from `references/workbook-spec.md`.
-- Keep the 26-field internal job record schema unchanged.
+- Keep the 26-field internal job record schema and add provenance as an optional extension object so earlier callers remain valid.
 - Keep `strict_state_owned` for backward compatibility; set it from verified employer nature and never use it as a default exclusion rule.
 - Replace only candidate-profile acquisition: hardcoded candidate fields become values derived from `resume_profile.json`.
 - Populate `简历匹配口径` dynamically from profile categories while retaining its six columns and formatting.
 - Keep `RESUME_FILE`, `FEISHU_URL`, `RUN_DATE`, `PREVIOUS_RESULT`, and `DAILY_MODE` compatible with earlier callers.
+- Treat multi-source inputs as additive; a legacy one-URL call must still work.
 - Add `JOB_NATURE_SCOPE` without changing earlier callers; omitted means `全部`.
 - Prefer the current upload over any reusable profile.
 

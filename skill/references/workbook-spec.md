@@ -12,7 +12,11 @@
 ## 1. Stable inputs
 
 - `RESUME_FILE`: runtime upload; never a bundled or hardcoded profile.
-- `FEISHU_URL`: default `https://yal2at57cvq.feishu.cn/base/GtSLbyyR3aCENOsJYC6cdlsVnih?table=tblH4au5rnBcqHgJ&view=vewFBnAr4c`.
+- `FEISHU_URL`: legacy single-source input; default comprehensive table `https://yal2at57cvq.feishu.cn/base/GtSLbyyR3aCENOsJYC6cdlsVnih?table=tblH4au5rnBcqHgJ&view=vewFBnAr4c`.
+- `FEISHU_URLS`: multi-source input; default is the comprehensive table above plus classified table `https://my.feishu.cn/base/NJo6biJTEajs6qs8cE3cxWt7nge?table=tblXkeBqqjqJSZaR&view=vew6Yd463E`.
+- `SOURCE_MODE`: default `两表互补`; alternatives are `综合招聘表`, `分类编制表`, and `自定义`.
+- `CATEGORY_SCOPE`: default `自动选择`; accepts classified-table category/view names.
+- `LINK_VERIFICATION_MODE`: default `必要时逐链接核验`.
 - `RUN_DATE`: `YYYY-MM-DD`.
 - `PREVIOUS_RESULT`: optional on first run.
 - `DAILY_MODE`: boolean.
@@ -60,7 +64,9 @@ Keep these 26 fields unchanged:
 25. `strict_state_owned`
 26. `official_or_verify_url`
 
-`exam` must remain `/` or `有笔试`. Display `/` as `无笔试（云表“/”）`. Never reinterpret it as unknown.
+`exam` may be `/`, `有笔试`, or `待确认`. Display `/` as `无笔试（综合表“/”）`. Use `待确认` only when the selected source and linked official material do not state the exam mode; never reinterpret a blank as no exam.
+
+Store optional provenance beside the stable 26 fields: `source_name`, `source_url`, `source_category`, `source_view`, `source_record_id`, `checked_url`, `checked_at`, `evidence_tier`, `unresolved_fields`, and `source_conflicts`. A merged duplicate may use lists so no source is lost.
 
 Use only these statuses: `在招`, `待确认`, `条件性`, `属性待核验`, `已截止`, `届次不符`, `不推荐/待核验`, `范围外`.
 
@@ -71,8 +77,8 @@ Use only these tiers: `S`, `A`, `B`, `C`, with boundaries `S=90–100`, `A=85–
 1. Read every employer type from the cloud table. When `JOB_NATURE_SCOPE` is `全部`, empty, or omitted, retain all types; otherwise retain only exact requested nature values and label excluded records `范围外` when they must remain in audit data.
 2. Derive employer-nature scope, target regions, cities, cohort, degree, major, and role keywords from the dynamic profile and current user preferences.
 3. Retain nationwide records but mark that the exact technical-role city requires confirmation.
-4. Deduplicate by `company + role + location`; do not merge different roles, locations, or batches.
-5. Define `no_exam` as `exam === '/'` and `with_exam` as `exam === '有笔试'`.
+4. Deduplicate by normalized `company + role + location + cohort/batch`; do not merge different role codes, substantive roles, locations, cohorts, or batches. Retain all provenance and conflicts for merged duplicates.
+5. Define `no_exam` as `exam === '/'`, `with_exam` as `exam === '有笔试'`, and `exam_unknown` as `exam === '待确认'`. Keep `exam_unknown` out of no-exam sheets and place it after confirmed written-exam rows in `有笔试备选`, clearly labeled `笔试待确认`.
 6. Define `no_exam_priority` as no-exam records within the active employer-nature scope, with status in `在招`, `待确认`, or `条件性`, matching dynamic region/cohort requirements, and `match_score >= 65`.
 7. Define `no_exam_closed` as no-exam records whose status is outside `在招`, `待确认`, and `条件性`.
 8. Compute `action_score = match_score + status_bonus + region_bonus + cohort_bonus`, where `在招=10`, `待确认=4`, other status `=0`, region match `=5`, and cohort match `=4`.
@@ -122,7 +128,7 @@ Output `云招聘表岗位筛选_{CANDIDATE_NAME}_{RUN_DATE}.xlsx` with exactly 
 ### 4.4 `有笔试备选`
 
 - Title `A1:O1`: `有笔试备选｜仅在无笔试岗位投完后考虑`.
-- Note: `云表明确标注“有笔试”的记录独立放置，不与无笔试岗位混排。`
+- Note: `云表明确标注“有笔试”的记录独立放置；未说明笔试方式的记录排在其后并标记“笔试待确认”，不得当作无笔试。`
 - Header row 4, data from row 5.
 - Headers: `序号｜公司｜目标岗位｜地点｜届次/批次｜匹配分｜是否笔试｜状态｜状态说明｜学历｜专业要求｜简历证据｜投递链接｜公告链接｜云表来源`.
 - Freeze 4 rows.
@@ -144,11 +150,14 @@ Output `云招聘表岗位筛选_{CANDIDATE_NAME}_{RUN_DATE}.xlsx` with exactly 
 
 - Title `A1:D1`: `每日自动复筛规则（供后续每天执行）`.
 - Header row 3: `项目｜规则｜输出｜说明`.
-- Keep these rows in order: `云表来源`, `动态人选`, `企业范围`, `地区`, `届次`, `岗位关键词`, `笔试字段`, `变化对比`, `提醒优先级`, `人工复核点`.
+- Keep these rows in order: `云表来源`, `来源模式`, `分类范围`, `动态人选`, `企业范围`, `地区`, `届次`, `岗位关键词`, `笔试字段`, `链接核验`, `变化对比`, `提醒优先级`, `人工复核点`.
 - `动态人选` must summarize the current profile and source hash; it replaces the prior fixed-person row without changing the four-column interface.
 - `企业范围` must show `全部（云表所有单位性质）` by default, or the exact current-request `JOB_NATURE_SCOPE`; never hardcode `央国企/事业单位`.
-- `笔试字段`: `“/”=无笔试；“有笔试”=有笔试`.
-- Compare by `公司+岗位+地区` and report additions, deadline changes, status changes, and link changes.
+- `来源模式` must show the active mode and both source URLs when `两表互补` is active.
+- `分类范围` must list inspected and explicitly skipped classified-table categories/views.
+- `笔试字段`: `综合表“/”=无笔试；“有笔试”=有笔试；其他来源未注明=待确认`.
+- `链接核验` must state the trigger fields, evidence order, inaccessible/unresolved links, and verification time.
+- Compare by `公司+岗位+地区+届次/批次` and report additions, deadline changes, status changes, and link changes.
 - Reminder order: `截止7天内 > 新增无笔试 > 状态由待确认转在招 > 其他变化`.
 - Freeze 3 rows.
 - Widths: `22,78,42,58`.
@@ -169,4 +178,4 @@ Output `云招聘表岗位筛选_{CANDIDATE_NAME}_{RUN_DATE}.xlsx` with exactly 
 
 ## 6. Daily comparison
 
-When `DAILY_MODE=true`, compare current and previous results by `company + role + location`. Report new jobs, deadline changes, status changes, application-link changes, and notice-link changes. Put open no-exam jobs first, flag deadlines within seven days, keep written-exam jobs separate, and retain closed records. If no jobs were added, state `今日无新增` while still reporting other changes.
+When `DAILY_MODE=true`, compare current and previous results by `company + role + location + cohort/batch`. Report new jobs, deadline changes, status changes, application-link changes, and notice-link changes. Put open no-exam jobs first, flag deadlines within seven days, keep written-exam and exam-unknown jobs separate from no-exam jobs, and retain closed records. If no jobs were added, state `今日无新增` while still reporting other changes.
